@@ -1,0 +1,112 @@
+---
+title: "Reproducible Research: Peer Assessment 1"
+output: 
+  html_document:
+    keep_md: true
+---
+
+```{r, load necessary packages, echo=TRUE}
+
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+```
+
+## Loading and preprocessing the data
+
+```{r,include=TRUE,echo=TRUE}
+activity= read.csv("activity.csv")
+
+
+activity$date= as.Date(activity$date)
+
+#extract day from date then collapse steps sum function grouping by day
+activity1= dplyr::mutate(activity,day=day(activity$date))
+
+activity1=group_by(activity1,day)%>% summarise(steps=sum(steps,na.rm = T))
+
+```
+
+
+## What is mean total number of steps taken per day?
+
+```{r,include=T,echo=TRUE}
+ggplot(data = activity1,aes(day,steps)) + geom_histogram(stat = "identity") + labs(title= " total number of steps taken each day",ylab="Steps",xlab="Day") + theme_bw()
+
+
+```
+
+## What is the average daily activity pattern?
+```{r,include=TRUE,echo=TRUE}
+#we have already grouped our data by day so we proceed to apply mean and median fun on summarise
+
+group_by(activity1,day)%>%summarise(mean_steps=mean(steps,na.rm = T),median_steps = median(steps,na.rm = T))
+
+```
+##Time series plot of the average number of steps taken
+```{r,include=T,echo=T}
+#group by interval then collapse 
+
+activity2=group_by(activity,interval)%>% summarise(steps=sum(steps,na.rm = T))
+
+ggplot(activity2,aes(x=interval,y=steps))+ geom_line() + labs(title="Time series plot of the average number of steps taken",xlab="5 - minutes interval per day",ylab= "Steps") + theme_bw()
+
+
+```
+
+##The 5-minute interval that, on average, contains the maximum number of steps
+```{r,include=T,echo=T}
+
+summary(activity$steps,na.rm=T)
+
+filter(activity,steps==806)
+
+#the interval with with maximum steps is 615
+```
+
+
+## Imputing missing values
+
+```{r,include=T,echo=T}
+#we replace all missing values with mean
+
+activity4= activity
+
+activity4$steps[is.na(activity4$steps)]= as.integer(mean(activity4$steps,na.rm=T))
+
+```
+
+##Histogram of the total number of steps taken each day after missing values are imputed
+```{r,include=T,echo=T}
+activity4$date= as.Date(activity4$date)
+
+#extract day from date then collapse steps sum function grouping by day
+activity4= dplyr::mutate(activity4,day=day(activity4$date))
+
+activity4=group_by(activity4,day)%>% summarise(steps=sum(steps,na.rm = T))
+
+ggplot(data = activity4,aes(day,steps)) + geom_histogram(stat = "identity") + labs(title= " total number of steps taken each day",ylab="Steps",xlab="Day") + theme_bw()
+
+```
+
+## Are there differences in activity patterns between weekdays and weekends?
+```{r,include=T,echo=T}
+
+activity5=mutate(activity,weekdays=weekdays(activity$date))
+
+##create two rows and one column panel in plot
+par(mfrow = c(2,1))
+##weekday dataset
+activity5wd= filter(activity5,weekdays %in% c("Friday","Monday","Thursday","Tuesday","Wednesday"))
+
+activity5wdend= filter(activity5,weekdays %in% c("Saturday","Sunday"))
+
+plot(activity5wd$steps, type = "l", main = "weekdays"
+     ,xlab = "the 5-minute interval"
+     ,ylab = "the average number of steps")
+
+plot(activity5wdend$steps, type = "l", main = "weekdends"
+     ,xlab = "the 5-minute interval"
+     ,ylab = "the average number of steps")
+```
+
